@@ -1,0 +1,30 @@
+{
+  "name": "smartgecko/governor-bundle",
+  "description": "Symfony bundle for the Governor Framework",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "license": "MIT",
+  "keywords": ["CQRS", "event sourcing", "framework"],
+  "authors": [
+    {
+      "name": "David Kalosi",
+      "email": "david.kalosi@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": { "Governor\\Bundle\\GovernorBundle\\": "" }
+  },
+  "require": {
+    "php": "5.5.*",
+    "smartgecko/governor-framework": "dev-master",
+    "symfony/proxy-manager-bridge":">=2.4",
+    "ocramius/proxy-manager": "1.0.x"
+  },
+  "require-dev": {
+    "symfony/framework-bundle": ">=2.4",
+    "symfony/finder": "2.6.6",
+    "phake/phake": "1.*",
+    "phpunit/phpunit": "4.2.*",
+    "doctrine/annotations": "1.2.3"
+  }
+}
