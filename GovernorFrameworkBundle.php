@@ -26,8 +26,8 @@ namespace Governor\Bundle\GovernorBundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Governor\Framework\Plugin\SymfonyBundle\DependencyInjection\Compiler\EventHandlerPass;
-use Governor\Framework\Plugin\SymfonyBundle\DependencyInjection\Compiler\CommandHandlerPass;
+use Governor\Bundle\GovernorBundle\DependencyInjection\Compiler\EventHandlerPass;
+use Governor\Bundle\GovernorBundle\DependencyInjection\Compiler\CommandHandlerPass;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 
 class GovernorFrameworkBundle extends Bundle

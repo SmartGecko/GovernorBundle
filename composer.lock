@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "17102c51eee7115ae54903917c00076b",
+    "hash": "d983b934d1ee49e801cf57feb64cf1a7",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -718,12 +718,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/SmartGecko/GovernorFramework.git",
-                "reference": "cd7868424e65c6594e316f3a326d76ac5c20b45d"
+                "reference": "aee9e83c2bd907c5f3a7ce847f698429f804213b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SmartGecko/GovernorFramework/zipball/cd7868424e65c6594e316f3a326d76ac5c20b45d",
-                "reference": "cd7868424e65c6594e316f3a326d76ac5c20b45d",
+                "url": "https://api.github.com/repos/SmartGecko/GovernorFramework/zipball/aee9e83c2bd907c5f3a7ce847f698429f804213b",
+                "reference": "aee9e83c2bd907c5f3a7ce847f698429f804213b",
                 "shasum": ""
             },
             "require": {
@@ -734,7 +734,7 @@
                 "predis/predis": "*",
                 "psr/log": "@stable",
                 "rhumsaa/uuid": "@stable",
-                "symfony/validator": "2.6.6",
+                "symfony/validator": "~2.6",
                 "videlalvaro/php-amqplib": "2.2.*"
             },
             "require-dev": {
@@ -765,7 +765,7 @@
                 "event sourcing",
                 "framework"
             ],
-            "time": "2015-04-14 18:34:53"
+            "time": "2015-04-16 19:41:39"
         },
         {
             "name": "symfony/dependency-injection",
