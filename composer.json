@@ -21,8 +21,8 @@
     "ocramius/proxy-manager": "1.0.x"
   },
   "require-dev": {
-    "symfony/framework-bundle": ">=2.4",
-    "symfony/finder": "~2.6",
+    "symfony/framework-bundle": ">=2.5",
+    "symfony/finder": "~2.5",
     "phake/phake": "1.*",
     "phpunit/phpunit": "4.2.*",
     "doctrine/annotations": "1.2.3"
