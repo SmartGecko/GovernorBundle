@@ -65,9 +65,19 @@
         <!-- annotation reader factories -->
         <parameter key="governor.annotation_reader_factory.simple.class">Governor\Framework\Common\Annotation\SimpleAnnotationReaderFactory</parameter>
         <parameter key="governor.annotation_reader_factory.file_cache.class">Governor\Framework\Common\Annotation\FileCacheAnnotationReaderFactory</parameter>
+
+        <!-- unit of work factory -->
+        <parameter key="governor.uow_factory.default.class">Governor\Framework\UnitOfWork\DefaultUnitOfWorkFactory</parameter>
+        <parameter key="governor.uow_factory.debug.class">Governor\Bundle\GovernorBundle\UnitOfWork\DebugUnitOfWorkFactory</parameter>
     </parameters>
 
     <services>
+
+        <!-- unit of work factory -->
+        <service id="governor.uow_factory.default" class="%governor.uow_factory.default.class%"/>
+        <service id="governor.uow_factory.debug" class="%governor.uow_factory.debug.class%">
+            <argument type="service" id="debug.stopwatch"/>
+        </service>
 
         <service id="governor.identifier_factory" class="%governor.identifier_factory.default.class%"/>
 

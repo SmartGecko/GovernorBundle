@@ -87,6 +87,8 @@ class GovernorFrameworkExtension extends Extension
             )
         );
 
+        $container->setAlias('governor.uow_factory', new Alias($config['uow_factory']));
+
         $container->setParameter('governor.aggregates', $config['aggregates']);
 
         $loader = new XmlFileLoader(
@@ -126,7 +128,9 @@ class GovernorFrameworkExtension extends Extension
     private function loadAnnotationReader($config, ContainerBuilder $container)
     {
         $definition = new Definition(
-            $container->getParameter(sprintf('governor.annotation_reader_factory.%s.class', $config['annotation_reader']['type']))
+            $container->getParameter(
+                sprintf('governor.annotation_reader_factory.%s.class', $config['annotation_reader']['type'])
+            )
         );
 
         switch ($config['annotation_reader']['type']) {
@@ -216,6 +220,7 @@ class GovernorFrameworkExtension extends Extension
 
             $definition = new Definition($bus['class']);
             $definition->addArgument(new Reference(sprintf('governor.command_bus.registry.%s', $name)));
+            $definition->addArgument(new Reference('governor.uow_factory'));
             $definition->addMethodCall('setLogger', [new Reference('logger')]);
 
             foreach ($bus['handler_interceptors'] as $interceptor) {

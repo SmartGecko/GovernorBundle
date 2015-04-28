@@ -42,6 +42,7 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
+                ->scalarNode('uow_factory')->defaultValue('governor.uow_factory.default')->end()
                 ->scalarNode('command_target_resolver')
                     ->defaultValue('annotation')
                     ->validate()
