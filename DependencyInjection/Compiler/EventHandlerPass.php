@@ -65,7 +65,11 @@ class EventHandlerPass extends AbstractHandlerPass
                 $busDefinition->addMethodCall('subscribe', [new Reference($id)]);
             }
 
-            $inspector = new MethodMessageHandlerInspector($reflectionClass, EventHandler::class);
+            $inspector = new MethodMessageHandlerInspector(
+                $container->get('governor.annotation_reader_factory'),
+                $reflectionClass,
+                EventHandler::class
+            );
 
             foreach ($inspector->getHandlerDefinitions() as $handlerDefinition) {
                 $handlerId = $this->getHandlerIdentifier('governor.event_handler');

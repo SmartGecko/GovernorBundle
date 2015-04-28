@@ -33,19 +33,23 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
- * Description of CommandHandlerPass
+ * Finds all services tagged as command handlers and registers them in the appropriate command handler registry.
  *
- * @author david
+ * @author    "David Kalosi" <david.kalosi@gmail.com>
+ * @license   <a href="http://www.opensource.org/licenses/mit-license.php">MIT License</a>
  */
 class CommandHandlerPass extends AbstractHandlerPass
 {
 
+    /**
+     * @param ContainerBuilder $container
+     */
     public function process(ContainerBuilder $container)
     {
         foreach ($container->findTaggedServiceIds('governor.command_handler') as $id => $attributes) {
-            $busDefinition = $container->findDefinition(
+            $registry = $container->findDefinition(
                 sprintf(
-                    "governor.command_bus.%s",
+                    "governor.command_bus.registry.%s",
                     isset($attributes['command_bus']) ? $attributes['command_bus']
                         : 'default'
                 )
@@ -55,6 +59,7 @@ class CommandHandlerPass extends AbstractHandlerPass
             $class = $definition->getClass();
 
             $inspector = new MethodMessageHandlerInspector(
+                $container->get('governor.annotation_reader_factory'),
                 new \ReflectionClass($class),
                 CommandHandler::class
             );
@@ -70,9 +75,11 @@ class CommandHandlerPass extends AbstractHandlerPass
                     ->setPublic(true)
                     ->setLazy(true);
 
-                $busDefinition->addMethodCall(
-                    'subscribe',
-                    array($handlerDefinition->getPayloadType(), new Reference($handlerId))
+                $registry->addMethodCall('subscribe',
+                    [
+                        $handlerDefinition->getPayloadType(),
+                        new Reference($handlerId)
+                    ]
                 );
             }
         }

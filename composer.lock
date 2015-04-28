@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "d983b934d1ee49e801cf57feb64cf1a7",
+    "hash": "4482641f6bab0f9af1b95430b1668511",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -559,56 +559,6 @@
             "time": "2014-01-09 22:37:17"
         },
         {
-            "name": "predis/predis",
-            "version": "v1.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/nrk/predis.git",
-                "reference": "7a170b3d8123c556597b4fbdb88631f99de180c2"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/nrk/predis/zipball/7a170b3d8123c556597b4fbdb88631f99de180c2",
-                "reference": "7a170b3d8123c556597b4fbdb88631f99de180c2",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.2"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "~4.0"
-            },
-            "suggest": {
-                "ext-curl": "Allows access to Webdis when paired with phpiredis",
-                "ext-phpiredis": "Allows faster serialization and deserialization of the Redis protocol"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Predis\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Daniele Alessandri",
-                    "email": "suppakilla@gmail.com",
-                    "homepage": "http://clorophilla.net"
-                }
-            ],
-            "description": "Flexible and feature-complete PHP client library for Redis",
-            "homepage": "http://github.com/nrk/predis",
-            "keywords": [
-                "nosql",
-                "predis",
-                "redis"
-            ],
-            "time": "2015-01-02 12:51:34"
-        },
-        {
             "name": "psr/log",
             "version": "1.0.0",
             "source": {
@@ -710,6 +660,7 @@
                 "identifier",
                 "uuid"
             ],
+            "abandoned": "ramsey/uuid",
             "time": "2014-11-09 18:42:56"
         },
         {
@@ -718,12 +669,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/SmartGecko/GovernorFramework.git",
-                "reference": "aee9e83c2bd907c5f3a7ce847f698429f804213b"
+                "reference": "2ad41cbaa316e2ffca03f3bf3cb7cbe495662281"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SmartGecko/GovernorFramework/zipball/aee9e83c2bd907c5f3a7ce847f698429f804213b",
-                "reference": "aee9e83c2bd907c5f3a7ce847f698429f804213b",
+                "url": "https://api.github.com/repos/SmartGecko/GovernorFramework/zipball/2ad41cbaa316e2ffca03f3bf3cb7cbe495662281",
+                "reference": "2ad41cbaa316e2ffca03f3bf3cb7cbe495662281",
                 "shasum": ""
             },
             "require": {
@@ -731,10 +682,9 @@
                 "jms/serializer": "*",
                 "monolog/monolog": "1.8.0",
                 "php": "5.5.*",
-                "predis/predis": "*",
                 "psr/log": "@stable",
                 "rhumsaa/uuid": "@stable",
-                "symfony/validator": "~2.6",
+                "symfony/validator": "~2.5",
                 "videlalvaro/php-amqplib": "2.2.*"
             },
             "require-dev": {
@@ -765,7 +715,7 @@
                 "event sourcing",
                 "framework"
             ],
-            "time": "2015-04-16 19:41:39"
+            "time": "2015-04-18 22:19:46"
         },
         {
             "name": "symfony/dependency-injection",
@@ -2047,6 +1997,64 @@
                 }
             ],
             "description": "Symfony Config Component",
+            "homepage": "http://symfony.com",
+            "time": "2015-03-30 15:54:10"
+        },
+        {
+            "name": "symfony/console",
+            "version": "v2.6.6",
+            "target-dir": "Symfony/Component/Console",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/Console.git",
+                "reference": "5b91dc4ed5eb08553f57f6df04c4730a73992667"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/Console/zipball/5b91dc4ed5eb08553f57f6df04c4730a73992667",
+                "reference": "5b91dc4ed5eb08553f57f6df04c4730a73992667",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.3"
+            },
+            "require-dev": {
+                "psr/log": "~1.0",
+                "symfony/event-dispatcher": "~2.1",
+                "symfony/phpunit-bridge": "~2.7",
+                "symfony/process": "~2.1"
+            },
+            "suggest": {
+                "psr/log": "For using the console logger",
+                "symfony/event-dispatcher": "",
+                "symfony/process": ""
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.6-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Symfony\\Component\\Console\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Symfony Community",
+                    "homepage": "http://symfony.com/contributors"
+                },
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                }
+            ],
+            "description": "Symfony Console Component",
             "homepage": "http://symfony.com",
             "time": "2015-03-30 15:54:10"
         },

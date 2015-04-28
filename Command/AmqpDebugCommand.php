@@ -29,8 +29,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Governor\Framework\EventHandling\Io\EventMessageReader;
-use Governor\Framework\EventHandling\Amqp\AMQPTerminal;
-use Governor\Framework\Serializer\JMSSerializer;
 
 /**
  * Description of AmqpDebugCommand

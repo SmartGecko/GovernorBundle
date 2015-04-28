@@ -28,6 +28,7 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Governor\Bundle\GovernorBundle\DependencyInjection\Compiler\EventHandlerPass;
 use Governor\Bundle\GovernorBundle\DependencyInjection\Compiler\CommandHandlerPass;
+use Governor\Bundle\GovernorBundle\DependencyInjection\Compiler\AggregateCommandHandlerPass;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 
 class GovernorFrameworkBundle extends Bundle
@@ -37,10 +38,9 @@ class GovernorFrameworkBundle extends Bundle
     {
         parent::build($container);
 
-        $container->addCompilerPass(new CommandHandlerPass(),
-                PassConfig::TYPE_BEFORE_REMOVING);
-        $container->addCompilerPass(new EventHandlerPass(),
-                PassConfig::TYPE_BEFORE_REMOVING);
+        $container->addCompilerPass(new CommandHandlerPass(), PassConfig::TYPE_BEFORE_REMOVING);
+        $container->addCompilerPass(new EventHandlerPass(), PassConfig::TYPE_BEFORE_REMOVING);
+        $container->addCompilerPass(new AggregateCommandHandlerPass(), PassConfig::TYPE_BEFORE_REMOVING);
     }
 
 }

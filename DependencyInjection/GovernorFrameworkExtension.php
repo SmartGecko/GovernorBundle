@@ -24,7 +24,6 @@
 
 namespace Governor\Bundle\GovernorBundle\DependencyInjection;
 
-use Governor\Framework\Annotations\CommandHandler;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\Config\FileLocator;
@@ -34,9 +33,13 @@ use Symfony\Component\DependencyInjection\Alias;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\DefinitionDecorator;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
-use Governor\Framework\Common\Annotation\MethodMessageHandlerInspector;
-use Governor\Framework\CommandHandling\Handlers\AnnotatedAggregateCommandHandler;
 
+/**
+ * Class GovernorFrameworkExtension.
+ *
+ * @author    "David Kalosi" <david.kalosi@gmail.com>
+ * @license   <a href="http://www.opensource.org/licenses/mit-license.php">MIT License</a>
+ */
 class GovernorFrameworkExtension extends Extension
 {
 
@@ -84,12 +87,16 @@ class GovernorFrameworkExtension extends Extension
             )
         );
 
+        $container->setParameter('governor.aggregates', $config['aggregates']);
+
         $loader = new XmlFileLoader(
             $container,
             new FileLocator(__DIR__.'/../Resources/config')
         );
         $loader->load('services.xml');
 
+        // configure annotation reader
+        $this->loadAnnotationReader($config, $container);
         // configure clusters
         $this->loadClusters($config, $container);
         // configure cluster selector
@@ -104,14 +111,34 @@ class GovernorFrameworkExtension extends Extension
         $this->loadCommandGateways($config, $container);
         // configure repositories
         $this->loadRepositories($config, $container);
-        //configure aggregate command handlers
-        $this->loadAggregateCommandHandlers($config, $container);
         // configure event store
         $this->loadEventStore($config, $container);
         // configure saga repository
         $this->loadSagaRepository($config, $container);
         // configure saga manager
         $this->loadSagaManager($config, $container);
+    }
+
+    /**
+     * @param array $config
+     * @param ContainerBuilder $container
+     */
+    private function loadAnnotationReader($config, ContainerBuilder $container)
+    {
+        $definition = new Definition(
+            $container->getParameter(sprintf('governor.annotation_reader_factory.%s.class', $config['annotation_reader']['type']))
+        );
+
+        switch ($config['annotation_reader']['type']) {
+            case 'simple':
+                break;
+            case 'file_cache':
+                $definition->addArgument($config['annotation_reader']['parameters']['path']);
+                $definition->addArgument($config['annotation_reader']['parameters']['debug']);
+                break;
+        }
+
+        $container->setDefinition('governor.annotation_reader_factory', $definition);
     }
 
     /**
@@ -180,14 +207,16 @@ class GovernorFrameworkExtension extends Extension
     private function loadCommandBuses($config, ContainerBuilder $container)
     {
         foreach ($config['command_buses'] as $name => $bus) {
-            $handlerInterceptors = array();
-            $dispatchInterceptors = array();
+            $handlerInterceptors = [];
+            $dispatchInterceptors = [];
+
+            $registryDefinition = new Definition($bus['registry_class']);
+
+            $container->setDefinition(sprintf('governor.command_bus.registry.%s', $name), $registryDefinition);
 
             $definition = new Definition($bus['class']);
-            $definition->addMethodCall(
-                'setLogger',
-                array(new Reference('logger'))
-            );
+            $definition->addArgument(new Reference(sprintf('governor.command_bus.registry.%s', $name)));
+            $definition->addMethodCall('setLogger', [new Reference('logger')]);
 
             foreach ($bus['handler_interceptors'] as $interceptor) {
                 $handlerInterceptors[] = new Reference($interceptor);
@@ -197,15 +226,8 @@ class GovernorFrameworkExtension extends Extension
                 $dispatchInterceptors[] = new Reference($interceptor);
             }
 
-            $definition->addMethodCall(
-                'setHandlerInterceptors',
-                array($handlerInterceptors)
-            );
-
-            $definition->addMethodCall(
-                'setDispatchInterceptors',
-                array($dispatchInterceptors)
-            );
+            $definition->addMethodCall('setHandlerInterceptors', [$handlerInterceptors]);
+            $definition->addMethodCall('setDispatchInterceptors', [$dispatchInterceptors]);
 
             $container->setDefinition(
                 sprintf("governor.command_bus.%s", $name),
@@ -464,60 +486,17 @@ class GovernorFrameworkExtension extends Extension
      * @param array $config
      * @param ContainerBuilder $container
      */
-    private function loadAggregateCommandHandlers(
-        $config,
-        ContainerBuilder $container
-    ) {
-        foreach ($config['aggregate_command_handlers'] as $name => $parameters) {
-            $busDefinition = $container->findDefinition(
-                sprintf(
-                    "governor.command_bus.%s",
-                    $parameters['command_bus']
-                )
-            );
-
-            $inspector = new MethodMessageHandlerInspector(
-                new \ReflectionClass($parameters['aggregate_root']),
-                CommandHandler::class
-            );
-
-            foreach ($inspector->getHandlerDefinitions() as $handlerDefinition) {
-                $handlerId = sprintf(
-                    "governor.aggregate_command_handler.%s",
-                    hash('crc32', openssl_random_pseudo_bytes(8))
-                );
-
-                $container->register($handlerId, AnnotatedAggregateCommandHandler::class)
-                    ->addArgument($parameters['aggregate_root'])
-                    ->addArgument($handlerDefinition->getMethod()->name)
-                    ->addArgument(new Reference('governor.parameter_resolver_factory'))
-                    ->addArgument(new Reference($parameters['repository']))
-                    ->addArgument(new Reference('governor.command_target_resolver'))
-                    ->setPublic(true)
-                    ->setLazy(true);
-
-                $busDefinition->addMethodCall(
-                    'subscribe',
-                    array($handlerDefinition->getPayloadType(), new Reference($handlerId))
-                );
-            }
-        }
-    }
-
-    /**
-     * @param array $config
-     * @param ContainerBuilder $container
-     */
     private function loadRepositories($config, ContainerBuilder $container)
     {
-        foreach ($config['repositories'] as $name => $parameters) {
+        foreach ($config['aggregates'] as $name => $parameters) {
             $repository = new DefinitionDecorator(
                 sprintf(
                     'governor.repository.%s',
-                    $parameters['type']
+                    $parameters['repository']
                 )
             );
-            $repository->replaceArgument(0, $parameters['aggregate_root'])
+
+            $repository->replaceArgument(0, $parameters['class'])
                 ->setPublic(true);
             $repository->replaceArgument(
                 1,
@@ -529,12 +508,12 @@ class GovernorFrameworkExtension extends Extension
                 )
             );
 
-            if ($parameters['type'] === 'eventsourcing' &&
-                isset($parameters['aggregate_factory'])
+            if ($parameters['repository'] === 'event_sourcing' &&
+                isset($parameters['factory'])
             ) {
                 $repository->replaceArgument(
                     4,
-                    new Reference($parameters['aggregate_factory'])
+                    new Reference($parameters['factory'])
                 );
             }
 

@@ -61,11 +61,29 @@ class Configuration implements ConfigurationInterface
                                        "[\"null\",\"optimistic\",\"pesimistic\"]")
                     ->end()
                 ->end()
+                ->arrayNode('annotation_reader')
+                    ->children()
+                        ->scalarNode('type')
+                            ->defaultValue('simple')
+                            ->validate()
+                            ->ifNotInArray(['simple', 'file_cache'])
+                            ->thenInvalid('Invalid annotation reader "%s", possible values are '.
+                                "[\"simple\",\"file_cache\"]")
+                            ->end()
+                        ->end()
+                        ->arrayNode('parameters')
+                            ->children()
+                                ->scalarNode('path')->end()
+                                ->booleanNode('debug')->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
                 ->arrayNode('event_store')                    
                     ->children()
                         ->scalarNode('type')                            
                             ->validate()
-                            ->ifNotInArray(array('orm', 'odm', 'filesystem'))
+                            ->ifNotInArray(['orm', 'odm', 'filesystem'])
                                 ->thenInvalid('Invalid event store "%s", possible values are '.
                                            "[\"orm\",\"odm\", \"filesystem\"]")
                             ->end()
@@ -121,8 +139,7 @@ class Configuration implements ConfigurationInterface
                         ->scalarNode('cluster')->defaultValue('default')->end()
                     ->end()
                 ->end()
-                ->append($this->addRepositoriesNode())
-                ->append($this->addAggregateCommandHandlersNode())
+                ->append($this->addAggregatesNode())
                 ->append($this->addCommandBusesNode())
                 ->append($this->addEventBusesNode())
                 ->append($this->addCommandGatewaysNode())
@@ -158,6 +175,7 @@ class Configuration implements ConfigurationInterface
             ->prototype('array')
                 ->children()
                     ->scalarNode('class')->isRequired()->end()
+                    ->scalarNode('registry_class')->isRequired()->end()
                     ->arrayNode('handler_interceptors')
                         ->prototype('scalar')->end()
                     ->end()
@@ -230,59 +248,35 @@ class Configuration implements ConfigurationInterface
         
         return $node;
     }
-    
-    
-    private function addRepositoriesNode()
+
+    private function addAggregatesNode()
     {
         $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('repositories');
+        $node = $treeBuilder->root('aggregates');
 
         $node
-            ->requiresAtLeastOneElement()
-                ->useAttributeAsKey('name')
+            ->useAttributeAsKey('name')
                 ->prototype('array')
                     ->children()
-                        ->scalarNode('aggregate_root')->isRequired()->end()
+                        ->scalarNode('class')->isRequired()->end()
+                        ->booleanNode('handler')->defaultValue(false)->end()
                         ->scalarNode('event_bus')->defaultValue('default')->end()
-                        ->scalarNode('aggregate_factory')->end()
-                        ->scalarNode('type')                        
+                        ->scalarNode('command_bus')->defaultValue('default')->end()
+                        ->scalarNode('factory')->end()
+                        ->scalarNode('repository')
                             ->isRequired()
                             ->cannotBeEmpty()
                             ->validate()
-                            ->ifNotInArray(array('orm', 'eventsourcing', 'hybrid'))
+                            ->ifNotInArray(['orm', 'event_sourcing', 'hybrid'])
                                 ->thenInvalid("Invalid repository type %s, possible values are " .
-                                                      "[\"orm\",\"eventsourcing\",\"hybrid\"]")
+                                            "[\"orm\",\"event_sourcing\",\"hybrid\"]")
                                 ->end()
                             ->end()
                         ->end()
-                     //   ->arrayNode('parameters')
-                       //     ->children()
-                         //       ->scalarNode('entity_manager')->end()
-                           //     ->scalarNode('document_manager')->end()
-                           // ->end()
-                        //->end()
                     ->end()
                 ->end();
 
         return $node;
     }
 
-    private function addAggregateCommandHandlersNode()
-    {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('aggregate_command_handlers');
-
-        $node
-            ->useAttributeAsKey('name')
-                ->prototype('array')
-                    ->children()
-                        ->scalarNode('aggregate_root')->isRequired()->end()
-                        ->scalarNode('repository')->isRequired()->end()
-                        ->scalarNode('command_bus')->defaultValue('default')->end()
-                    ->end()
-                ->end()
-            ->end();
-
-        return $node;
-    }
 }
