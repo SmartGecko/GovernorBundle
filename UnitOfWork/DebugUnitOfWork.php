@@ -58,7 +58,7 @@ class DebugUnitOfWork extends DefaultUnitOfWork
      */
     public function start()
     {
-        $this->stopwatch->start(sprintf('governor_uow_%s', self::$level));
+        $this->stopwatch->openSection(sprintf('governor_uow_%s', self::$level));
         self::$level++;
         parent::start();
     }
@@ -69,7 +69,7 @@ class DebugUnitOfWork extends DefaultUnitOfWork
     public function commit()
     {
         parent::commit();
-        $this->stopwatch->stop(sprintf('governor_uow_%s', self::$level));
+        $this->stopwatch->stopSection(sprintf('governor_uow_%s', self::$level));
         self::$level--;
     }
 
@@ -79,7 +79,7 @@ class DebugUnitOfWork extends DefaultUnitOfWork
     public function rollback(\Exception $ex = null)
     {
         parent::rollback($ex);
-        $this->stopwatch->stop(sprintf('governor_uow_%s', self::$level));
+        $this->stopwatch->stopSection(sprintf('governor_uow_%s', self::$level));
         self::$level--;
     }
 
@@ -91,7 +91,7 @@ class DebugUnitOfWork extends DefaultUnitOfWork
         EventBusInterface $eventBus,
         SaveAggregateCallbackInterface $saveAggregateCallback
     ) {
-        $this->stopwatch->openSection('register_aggregates');
+        $this->stopwatch->start('register_aggregates');
 
         $result = parent::registerAggregate(
             $aggregateRoot,
@@ -99,7 +99,7 @@ class DebugUnitOfWork extends DefaultUnitOfWork
             $saveAggregateCallback
         );
 
-        $this->stopwatch->openSection('register_aggregates');
+        $this->stopwatch->stop('register_aggregates');
 
         return $result;
     }
@@ -109,11 +109,11 @@ class DebugUnitOfWork extends DefaultUnitOfWork
      */
     protected function publishEvents()
     {
-        $this->stopwatch->openSection('publish_events');
+        $this->stopwatch->start('publish_events');
 
         $result = parent::publishEvents();
 
-        $this->stopwatch->stopSection('publish_events');
+        $this->stopwatch->stop('publish_events');
 
         return $result;
     }
@@ -123,11 +123,11 @@ class DebugUnitOfWork extends DefaultUnitOfWork
      */
     protected function saveAggregates()
     {
-        $this->stopwatch->openSection('save_aggregates');
+        $this->stopwatch->start('save_aggregates');
 
         parent::saveAggregates();
 
-        $this->stopwatch->stopSection('save_aggregates');
+        $this->stopwatch->stop('save_aggregates');
     }
 
 

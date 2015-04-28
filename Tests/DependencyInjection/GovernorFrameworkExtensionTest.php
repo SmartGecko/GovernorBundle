@@ -28,6 +28,7 @@ use Governor\Framework\EventHandling\EventListenerInterface;
 use Governor\Framework\CommandHandling\SimpleCommandBus;
 use Governor\Framework\EventHandling\SimpleEventBus;
 use Governor\Framework\CommandHandling\InMemoryCommandHandlerRegistry;
+use Symfony\Component\Stopwatch\Stopwatch;
 
 $loader = require __DIR__."/../../vendor/autoload.php";
 $loader->add('Governor', __DIR__);
@@ -257,6 +258,7 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
         );
 
         $container->set('logger', $this->getMock(LoggerInterface::class));
+        $container->set('debug.stopwatch', $this->getMock(Stopwatch::class));
         $container->set('jms_serializer', $this->getMock(\JMS\Serializer\SerializerInterface::class));
         $container->set('validator', $this->getMock(\Symfony\Component\Validator\ValidatorInterface::class));
 
