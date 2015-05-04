@@ -47,9 +47,9 @@
         <parameter key="governor.resource_injector.container.class">Governor\Framework\Saga\ContainerAwareResourceInjector</parameter>
                 
 
-        <!-- AMQP terminal -->
-        <parameter key="governor.event_bus_terminal.amqp.class">Governor\Framework\EventHandling\Amqp\AmqpTerminal</parameter>
-        <parameter key="governor.amqp_terminal.connection.class">PhpAmqpLib\Connection\AMQPConnection</parameter>
+        <!-- terminals -->
+        <parameter key="governor.terminal.amqp.class">Governor\Framework\EventHandling\Amqp\AmqpTerminal</parameter>
+        <parameter key="governor.amqp.connection.class">PhpAmqpLib\Connection\AMQPConnection</parameter>
         
         <!-- command interceptors -->
         <parameter key="governor.interceptor.validator.class">Governor\Framework\CommandHandling\Interceptors\ValidatorInterceptor</parameter>
@@ -69,9 +69,21 @@
         <!-- unit of work factory -->
         <parameter key="governor.uow_factory.default.class">Governor\Framework\UnitOfWork\DefaultUnitOfWorkFactory</parameter>
         <parameter key="governor.uow_factory.debug.class">Governor\Bundle\GovernorBundle\UnitOfWork\DebugUnitOfWorkFactory</parameter>
+
+        <!-- registries -->
+        <parameter key="governor.command_bus_registry.in_memory.class">Governor\Framework\CommandHandling\InMemoryCommandHandlerRegistry</parameter>
+        <parameter key="governor.event_bus_registry.in_memory.class">Governor\Framework\EventHandling\InMemoryEventListenerRegistry</parameter>
+
     </parameters>
 
     <services>
+
+
+        <service id="governor.command_bus_registry.in_memory" class="%governor.command_bus_registry.in_memory.class%" public="false">
+        </service>
+
+        <service id="governor.event_bus_registry.in_memory" class="%governor.event_bus_registry.in_memory.class%" public="false">
+        </service>
 
         <!-- unit of work factory -->
         <service id="governor.uow_factory.default" class="%governor.uow_factory.default.class%"/>

@@ -99,12 +99,8 @@ class GovernorFrameworkExtension extends Extension
 
         // configure annotation reader
         $this->loadAnnotationReader($config, $container);
-        // configure clusters
-        $this->loadClusters($config, $container);
-        // configure cluster selector
-        $this->loadClusterSelector($config, $container);
-        //configure AMQP terminals
-        $this->loadAMQPTerminals($config, $container);
+        //configure terminals
+        $this->loadTerminals($config, $container);
         // configure command buses
         $this->loadCommandBuses($config, $container);
         // configure event buses
@@ -146,43 +142,45 @@ class GovernorFrameworkExtension extends Extension
     }
 
     /**
-     * @param array $config
+     * @param $config
      * @param ContainerBuilder $container
      */
-    private function loadAMQPTerminals($config, ContainerBuilder $container)
+    private function loadAmqpTerminals($config, ContainerBuilder $container)
     {
-        foreach ($config['amqp_terminals'] as $name => $terminal) {
+        foreach ($config as $name => $terminal) {
             $connectionDefinition = new Definition(
-                $container->getParameter('governor.amqp_terminal.connection.class'),
-                array(
-                    $terminal['connection']['host'],
-                    $terminal['connection']['port'],
-                    $terminal['connection']['user'],
-                    $terminal['connection']['password'],
-                    $terminal['connection']['vhost']
-                )
+                $container->getParameter('governor.amqp.connection.class'),
+                [
+                    $terminal['host'],
+                    $terminal['port'],
+                    $terminal['user'],
+                    $terminal['password'],
+                    $terminal['vhost']
+                ]
             );
+
+            $connectionDefinition->setLazy(true);
 
             $container->setDefinition(
                 sprintf(
-                    "governor.amqp_terminal.connection.%s",
+                    "governor.amqp.connection.%s",
                     $name
                 ),
                 $connectionDefinition
             );
 
-            $definition = new Definition($container->getParameter('governor.event_bus_terminal.amqp.class'));
+            $definition = new Definition($container->getParameter('governor.terminal.amqp.class'));
             $definition->addArgument(new Reference('governor.serializer'));
             $definition->addMethodCall(
                 'setConnection',
-                array(
+                [
                     new Reference(
                         sprintf(
-                            "governor.amqp_terminal.connection.%s",
+                            "governor.amqp.connection.%s",
                             $name
                         )
                     )
-                )
+                ]
             );
 
             $definition->addMethodCall(
@@ -198,9 +196,28 @@ class GovernorFrameworkExtension extends Extension
             }
 
             $container->setDefinition(
-                sprintf("governor.amqp_terminal.%s", $name),
+                sprintf("governor.terminal.amqp.%s", $name),
                 $definition
             );
+        }
+    }
+
+    /**
+     * @param array $config
+     * @param ContainerBuilder $container
+     */
+    private function loadTerminals($config, ContainerBuilder $container)
+    {
+        if (empty($config['terminals'])) {
+            return;
+        }
+
+        foreach ($config['terminals'] as $type => $data) {
+            switch ($type) {
+                case 'amqp':
+                    $this->loadAmqpTerminals($data, $container);
+                    break;
+            }
         }
     }
 
@@ -214,7 +231,9 @@ class GovernorFrameworkExtension extends Extension
             $handlerInterceptors = [];
             $dispatchInterceptors = [];
 
-            $registryDefinition = new Definition($bus['registry_class']);
+            $template = $container->findDefinition($bus['registry']);
+            $registryDefinition = new Definition($template->getClass());
+            $registryDefinition->setArguments($template->getArguments());
 
             $container->setDefinition(sprintf('governor.command_bus.registry.%s', $name), $registryDefinition);
 
@@ -251,61 +270,29 @@ class GovernorFrameworkExtension extends Extension
      * @param array $config
      * @param ContainerBuilder $container
      */
-    private function loadClusterSelector($config, ContainerBuilder $container)
-    {
-        $definition = new Definition($config['cluster_selector']['class']);
-        $definition->addArgument(
-            new Reference(
-                sprintf(
-                    'governor.cluster.%s',
-                    $config['cluster_selector']['cluster']
-                )
-            )
-        );
-
-        $container->setDefinition("governor.cluster_selector", $definition);
-    }
-
-    /**
-     * @param array $config
-     * @param ContainerBuilder $container
-     */
-    private function loadClusters($config, ContainerBuilder $container)
-    {
-        foreach ($config['clusters'] as $name => $cluster) {
-            $definition = new Definition($cluster['class']);
-            $definition->addArgument($name);
-            $definition->addArgument(new Reference($cluster['order_resolver']));
-
-            $definition->addMethodCall(
-                'setLogger',
-                array(new Reference('logger'))
-            );
-
-            $container->setDefinition(
-                sprintf("governor.cluster.%s", $name),
-                $definition
-            );
-        }
-    }
-
-    /**
-     * @param array $config
-     * @param ContainerBuilder $container
-     */
     private function loadEventBuses($config, ContainerBuilder $container)
     {
         foreach ($config['event_buses'] as $name => $bus) {
+            $terminals = [];
+
+            $template = $container->findDefinition($bus['registry']);
+            $registryDefinition = new Definition($template->getClass());
+            $registryDefinition->setArguments($template->getArguments());
+
+            $container->setDefinition(sprintf('governor.event_bus.registry.%s', $name), $registryDefinition);
+
             $definition = new Definition($bus['class']);
+            $definition->addArgument(new Reference(sprintf('governor.event_bus.registry.%s', $name)));
             $definition->addMethodCall(
                 'setLogger',
-                array(new Reference('logger'))
+                [new Reference('logger')]
             );
 
-            if (isset($bus['terminal'])) {
-                $definition->addArgument(new Reference('governor.cluster_selector'));
-                $definition->addArgument(new Reference($bus['terminal']));
+            foreach ($bus['terminals'] as $terminal) {
+                $terminals[] = new Reference($terminal);
             }
+
+            $definition->addMethodCall('setTerminals', [$terminals]);
 
             $container->setDefinition(
                 sprintf("governor.event_bus.%s", $name),
@@ -415,15 +402,15 @@ class GovernorFrameworkExtension extends Extension
 
         $container->setParameter('governor.sagas', $classes);
 
-        $busDefinition = $container->findDefinition(
+        $registry = $container->findDefinition(
             sprintf(
-                "governor.event_bus.%s",
+                "governor.event_bus.registry.%s",
                 $config['saga_manager']['event_bus']
             )
         );
-        $busDefinition->addMethodCall(
+        $registry->addMethodCall(
             'subscribe',
-            array(new Reference('governor.saga_manager'))
+            [new Reference('governor.saga_manager')]
         );
 
         $definition = new Definition($container->getParameter('governor.saga_manager.annotation.class'));

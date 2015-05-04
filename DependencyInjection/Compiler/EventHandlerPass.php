@@ -57,12 +57,20 @@ class EventHandlerPass extends AbstractHandlerPass
                 )
             );
 
+            $registry = $container->findDefinition(
+                sprintf(
+                    "governor.event_bus.registry.%s",
+                    isset($attributes['event_bus']) ? $attributes['event_bus']
+                        : 'default'
+                )
+            );
+
             $definition = $container->findDefinition($id);
             $reflectionClass = new \ReflectionClass($definition->getClass());
 
             // subscribe event listener instances directly
             if ($reflectionClass->implementsInterface(EventListenerInterface::class)) {
-                $busDefinition->addMethodCall('subscribe', [new Reference($id)]);
+                $registry->addMethodCall('subscribe', [new Reference($id)]);
             }
 
             $inspector = new MethodMessageHandlerInspector(
@@ -82,7 +90,7 @@ class EventHandlerPass extends AbstractHandlerPass
                     ->setPublic(true)
                     ->setLazy(true);
 
-                $busDefinition->addMethodCall(
+                $registry->addMethodCall(
                     'subscribe',
                     [new Reference($handlerId)]
                 );

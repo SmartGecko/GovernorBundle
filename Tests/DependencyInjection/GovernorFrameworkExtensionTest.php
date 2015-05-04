@@ -28,7 +28,9 @@ use Governor\Framework\EventHandling\EventListenerInterface;
 use Governor\Framework\CommandHandling\SimpleCommandBus;
 use Governor\Framework\EventHandling\SimpleEventBus;
 use Governor\Framework\CommandHandling\InMemoryCommandHandlerRegistry;
+use Governor\Framework\EventHandling\InMemoryEventListenerRegistry;
 use Symfony\Component\Stopwatch\Stopwatch;
+use Governor\Framework\EventHandling\Amqp\AmqpTerminal;
 
 $loader = require __DIR__."/../../vendor/autoload.php";
 $loader->add('Governor', __DIR__);
@@ -67,11 +69,11 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
 
     public function testCommandHandlers()
     {
+        /** @var CommandBusInterface $commandBus */
         $commandBus = $this->testSubject->get('governor.command_bus.default');
         $this->assertInstanceOf(CommandBusInterface::class, $commandBus);
 
-        /** @var InMemoryCommandHandlerRegistry $registry */
-        $registry = $this->testSubject->get('governor.command_bus.registry.default');
+        $registry = $commandBus->getCommandHandlerRegistry();
         $this->assertInstanceOf(InMemoryCommandHandlerRegistry::class, $registry);
 
         $handler = $registry->findCommandHandlerFor(GenericCommandMessage::asCommandMessage(new ContainerCommand1()));
@@ -87,14 +89,15 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
 
     public function testEventHandlers()
     {
+        /** @var EventBusInterface $eventBus */
         $eventBus = $this->testSubject->get('governor.event_bus.default');
 
         $this->assertInstanceOf(EventBusInterface::class, $eventBus);
 
-        $reflectionProperty = new \ReflectionProperty($eventBus, 'listeners');
-        $reflectionProperty->setAccessible(true);
+        $registry = $eventBus->getEventListenerRegistry();
+        $this->assertInstanceOf(InMemoryEventListenerRegistry::class, $registry);
 
-        $listeners = $reflectionProperty->getValue($eventBus);
+        $listeners = $registry->getListeners();
 
         $this->assertCount(2, $listeners);
         $this->assertContainsOnlyInstancesOf(EventListenerInterface::class, $listeners);
@@ -153,11 +156,37 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(1, $count);
     }
 
+    public function testAmqp()
+    {
+        /** @var AmqpTerminal $terminal */
+        $terminal = $this->testSubject->get('governor.terminal.amqp.default');
+        $this->assertInstanceOf(AmqpTerminal::class, $terminal);
+
+        $connection = $this->testSubject->get('governor.amqp.connection.default');
+    }
+
+    public function testEventBuses()
+    {
+        /** @var EventBusInterface $first */
+        $first = $this->testSubject->get('governor.event_bus.default');
+        /** @var EventBusInterface $second */
+        $second = $this->testSubject->get('governor.event_bus.second');
+
+        $this->assertInstanceOf(EventBusInterface::class, $first);
+        $this->assertInstanceOf(EventBusInterface::class, $second);
+    }
+
     public function createTestContainer()
     {
 
         $config = [
             'governor' => [
+                'terminals' => [
+                    'amqp' => [
+                        'default' => [
+                        ]
+                    ]
+                ],
                 'annotation_reader' => [
                     'type' => 'file_cache',
                     'parameters' => [
@@ -180,12 +209,20 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                 'command_buses' => [
                     'default' => [
                         'class' => SimpleCommandBus::class,
-                        'registry_class' => InMemoryCommandHandlerRegistry::class
+                        'registry' => 'governor.command_bus_registry.in_memory'
                     ]
                 ],
                 'event_buses' => [
                     'default' => [
-                        'class' => SimpleEventBus::class
+                        'class' => SimpleEventBus::class,
+                        'registry' => 'governor.event_bus_registry.in_memory',
+                        'terminals' => [
+                            'governor.terminal.amqp.default'
+                        ]
+                    ],
+                    'second' => [
+                        'class' => SimpleEventBus::class,
+                        'registry' => 'governor.event_bus_registry.in_memory'
                     ]
                 ],
                 'event_store' => [
@@ -199,12 +236,6 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                         'class' => 'Governor\Framework\CommandHandling\Gateway\DefaultCommandGateway'
                     ]
                 ],
-                'clusters' => [
-                    'default' => [
-                        'class' => 'Governor\Framework\EventHandling\SimpleCluster',
-                        'order_resolver' => 'governor.order_resolver'
-                    ]
-                ],
                 'saga_repository' => [
                     'type' => 'orm',
                     'parameters' => [
@@ -216,9 +247,6 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                     'saga_locations' => [
                         sys_get_temp_dir()
                     ]
-                ],
-                'cluster_selector' => [
-                    'class' => 'Governor\Framework\EventHandling\DefaultClusterSelector'
                 ],
                 'order_resolver' => 'annotation'
             ]

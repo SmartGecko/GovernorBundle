@@ -46,7 +46,7 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode('command_target_resolver')
                     ->defaultValue('annotation')
                     ->validate()
-                    ->ifNotInArray(array('annotation', 'metadata'))
+                    ->ifNotInArray(['annotation', 'metadata'])
                         ->thenInvalid('Invalid command target resolver "%s", possible values are '.
                                        "[\"annotation\",\"metadata\"]")
                     ->end()
@@ -120,7 +120,7 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode('serializer')
                     ->defaultValue('jms')
                     ->validate()
-                    ->ifNotInArray(array('jms'))
+                    ->ifNotInArray(['jms'])
                         ->thenInvalid('Invalid serializer "%s", possible values are '.
                                            "[\"jms\"]")
                     ->end()
@@ -134,39 +134,16 @@ class Configuration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
-                ->arrayNode('cluster_selector')
-                    ->children()
-                        ->scalarNode('class')->isRequired()->end()
-                        ->scalarNode('cluster')->defaultValue('default')->end()
-                    ->end()
-                ->end()
                 ->append($this->addAggregatesNode())
                 ->append($this->addCommandBusesNode())
                 ->append($this->addEventBusesNode())
                 ->append($this->addCommandGatewaysNode())
-                ->append($this->addAMQPTerminalsNode())
-                ->append($this->addClustersNode())
+                ->append($this->addTerminalsNode())
             ->end();
 
         return $treeBuilder;
     }
 
-    private function addClustersNode()
-    {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('clusters');
-        
-        $node->useAttributeAsKey('name')
-            ->prototype('array')
-                ->children()
-                    ->scalarNode('class')->isRequired()->end()
-                    ->scalarNode('order_resolver')->isRequired()->end()
-                ->end()
-            ->end();
-
-        return $node;
-    }
-    
     private function addCommandBusesNode()
     {
         $treeBuilder = new TreeBuilder();
@@ -176,7 +153,7 @@ class Configuration implements ConfigurationInterface
             ->prototype('array')
                 ->children()
                     ->scalarNode('class')->isRequired()->end()
-                    ->scalarNode('registry_class')->isRequired()->end()
+                    ->scalarNode('registry')->isRequired()->end()
                     ->arrayNode('handler_interceptors')
                         ->prototype('scalar')->end()
                     ->end()
@@ -199,7 +176,10 @@ class Configuration implements ConfigurationInterface
             ->prototype('array')
                 ->children()
                     ->scalarNode('class')->isRequired()->end()
-                    ->scalarNode('terminal')->end()
+                    ->scalarNode('registry')->isRequired()->end()
+                    ->arrayNode('terminals')
+                        ->prototype('scalar')->end()
+                    ->end()
                 ->end()
             ->end();
 
@@ -223,26 +203,27 @@ class Configuration implements ConfigurationInterface
         return $node;
     }
 
-    private function addAMQPTerminalsNode()
+    private function addTerminalsNode()
     {
         $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('amqp_terminals');
+        $node = $treeBuilder->root('terminals');
         
         $node
-            ->canBeUnset()
-                ->useAttributeAsKey('name')
-                ->prototype('array')
-                    ->children()
-                        ->arrayNode('connection')
+            ->children()
+                ->arrayNode('amqp')
+                    ->canBeUnset()
+                        ->useAttributeAsKey('name')
+                        ->prototype('array')
+                            ->cannotBeEmpty()
                             ->children()
                                 ->scalarNode('host')->defaultValue('localhost')->end()
                                 ->scalarNode('port')->defaultValue(5672)->end()
                                 ->scalarNode('user')->defaultValue('guest')->end()
                                 ->scalarNode('password')->defaultValue('guest')->end()
                                 ->scalarNode('vhost')->defaultValue('/')->end()
+                                ->scalarNode('routing_key_resolver')->end()
                             ->end()
                         ->end()
-                        ->scalarNode('routing_key_resolver')->end()
                     ->end()
                 ->end()
             ->end();
