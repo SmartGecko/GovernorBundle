@@ -15,7 +15,7 @@
     "psr-4": { "Governor\\Bundle\\GovernorBundle\\": "" }
   },
   "require": {
-    "php": "5.5.*",
+    "php": ">=5.5",
     "smartgecko/governor-framework": "dev-master",
     "symfony/proxy-manager-bridge":">=2.4",
     "ocramius/proxy-manager": "1.0.x"
