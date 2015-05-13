@@ -5,6 +5,9 @@ php:
   - 5.6
   - hhvm
 
+services:
+  - rabbitmq
+
 before_script:
   - wget https://scrutinizer-ci.com/ocular.phar
   - composer self-update
