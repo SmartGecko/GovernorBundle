@@ -41,7 +41,7 @@ A default command bus named ```default``` must be configured.
 * ```registry: string```
 * ```dispatch_interceptors: array```
 * ```handler_interceptors: array```
-* 
+
 ### Event buses
 
 ## Sample configuration
