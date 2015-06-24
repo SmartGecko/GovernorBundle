@@ -226,9 +226,9 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                     ]
                 ],
                 'event_store' => [
-                    'type' => 'orm',
+                    'type' => 'mongo',
                     'parameters' => [
-                        'entity_manager' => 'default_entity_manager'
+
                     ]
                 ],
                 'command_gateways' => [
@@ -248,7 +248,13 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                         sys_get_temp_dir()
                     ]
                 ],
-                'order_resolver' => 'annotation'
+                'order_resolver' => 'annotation',
+                'mongo_templates' => [
+                    'default' => [
+                        'server' => 'mongodb://localhost:27017',
+                        'database' => 'test'
+                    ]
+                ]
             ]
         ];
 

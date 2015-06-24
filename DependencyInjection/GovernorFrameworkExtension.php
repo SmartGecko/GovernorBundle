@@ -99,6 +99,8 @@ class GovernorFrameworkExtension extends Extension
 
         // configure annotation reader
         $this->loadAnnotationReader($config, $container);
+        // configure mongo templates
+        $this->loadMongoTemplates($config, $container);
         //configure terminals
         $this->loadTerminals($config, $container);
         // configure command buses
@@ -117,6 +119,40 @@ class GovernorFrameworkExtension extends Extension
         $this->loadSagaManager($config, $container);
     }
 
+    /**
+     * @param array $config
+     * @param ContainerBuilder $container
+     */
+    private function loadMongoTemplates($config, ContainerBuilder $container)
+    {
+        if (!isset($config['mongo_templates'])) {
+            return;
+        }
+
+        foreach ($config['mongo_templates'] as $name => $params) {
+            $definition = new Definition(
+                $container->getParameter('governor.mongo_template.default.class')
+            );
+
+            $definition->addArgument($params['server']);
+            $definition->addArgument($params['database']);
+
+            if (isset($params['auth_database'])) {
+                $definition->addArgument($params['auth_database']);
+            }
+
+            if (isset($params['event_collection'])) {
+                $definition->addArgument($params['event_collection']);
+            }
+
+            if (isset($params['snapshot_collection'])) {
+                $definition->addArgument($params['snapshot_collection']);
+            }
+
+            $container->setDefinition(sprintf('governor.mongo_template.%s', $name), $definition);
+        }
+
+    }
     /**
      * @param array $config
      * @param ContainerBuilder $container
@@ -464,7 +500,11 @@ class GovernorFrameworkExtension extends Extension
                 }
 
                 break;
-            case 'odm':
+            case 'mongo':
+                $definition->addArgument(new Reference($config['event_store']['parameters']['mongo_template']));
+                $definition->addArgument(new Reference('governor.serializer'));
+                $definition->addArgument(new Reference($config['event_store']['parameters']['storage_strategy']));
+
                 break;
         }
 

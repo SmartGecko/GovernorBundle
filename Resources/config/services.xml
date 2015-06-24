@@ -29,8 +29,11 @@
 
         <!-- event store classes -->        
         <parameter key="governor.event_store.orm.class">Governor\Framework\EventStore\Orm\OrmEventStore</parameter>
-        <parameter key="governor.event_store.odm.class">Governor\Framework\EventStore\Odm\OdmEventStore</parameter>
+        <parameter key="governor.event_store.mongo.class">Governor\Framework\EventStore\Mongo\MongoEventStore</parameter>
         <parameter key="governor.event_store.filesystem.class">Governor\Framework\EventStore\Filesystem\FilesystemEventStore</parameter>
+
+        <parameter key="governor.mongo_template.default.class">Governor\Framework\EventStore\Mongo\DefaultMongoTemplate</parameter>
+        <parameter key="governor.storage_strategy.event.class">Governor\Framework\EventStore\Mongo\DocumentPerEventStorageStrategy</parameter>
 
         <parameter key="governor.event_file_resolver.class">Governor\Framework\EventStore\Filesystem\SimpleEventFileResolver</parameter>
 
@@ -78,6 +81,9 @@
 
     <services>
 
+        <service id="governor.storage_strategy.event" class="%governor.storage_strategy.event.class%">
+
+        </service>
 
         <service id="governor.command_bus_registry.in_memory" class="%governor.command_bus_registry.in_memory.class%" public="false">
         </service>

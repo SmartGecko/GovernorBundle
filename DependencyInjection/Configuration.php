@@ -57,7 +57,7 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode('lock_manager')
                     ->defaultValue('null')
                     ->validate()
-                    ->ifNotInArray(array('null', 'optimistic', 'pesimistic'))
+                    ->ifNotInArray(['null', 'optimistic', 'pesimistic'])
                         ->thenInvalid('Invalid lock manager "%s", possible values are '.
                                        "[\"null\",\"optimistic\",\"pesimistic\"]")
                     ->end()
@@ -84,16 +84,17 @@ class Configuration implements ConfigurationInterface
                     ->children()
                         ->scalarNode('type')                            
                             ->validate()
-                            ->ifNotInArray(['orm', 'odm', 'filesystem'])
+                            ->ifNotInArray(['orm', 'mongo', 'filesystem'])
                                 ->thenInvalid('Invalid event store "%s", possible values are '.
-                                           "[\"orm\",\"odm\", \"filesystem\"]")
+                                           "[\"orm\",\"mongo\", \"filesystem\"]")
                             ->end()
                         ->end()
                         ->arrayNode('parameters')
                             ->children()
                                 ->scalarNode('entity_manager')->end()
                                 ->scalarNode('entry_store')->end()
-                                ->scalarNode('document_manager')->end()
+                                ->scalarNode('mongo_template')->defaultValue('governor.mongo_template.default')->end()
+                                ->scalarNode('storage_strategy')->defaultValue('governor.storage_strategy.event')->end()
                                 ->scalarNode('directory')->end()
                             ->end()
                         ->end()
@@ -104,7 +105,7 @@ class Configuration implements ConfigurationInterface
                         ->scalarNode('type')
                             ->defaultValue('orm')
                             ->validate()
-                            ->ifNotInArray(array('orm', 'odm'))
+                            ->ifNotInArray(['orm', 'odm'])
                                 ->thenInvalid('Invalid saga repository "%s", possible values are '.
                                            "[\"orm\",\"odm\"]")
                             ->end()
@@ -139,6 +140,7 @@ class Configuration implements ConfigurationInterface
                 ->append($this->addEventBusesNode())
                 ->append($this->addCommandGatewaysNode())
                 ->append($this->addTerminalsNode())
+                ->append($this->addMongoTemplates())
             ->end();
 
         return $treeBuilder;
@@ -180,6 +182,26 @@ class Configuration implements ConfigurationInterface
                     ->arrayNode('terminals')
                         ->prototype('scalar')->end()
                     ->end()
+                ->end()
+            ->end();
+
+        return $node;
+    }
+
+    private function addMongoTemplates()
+    {
+        $treeBuilder = new TreeBuilder();
+        $node = $treeBuilder->root('mongo_templates');
+
+        $node
+            ->useAttributeAsKey('name')
+            ->prototype('array')
+                ->children()
+                    ->scalarNode('server')->isRequired()->end()
+                    ->scalarNode('database')->isRequired()->end()
+                    ->scalarNode('auth_database')->defaultValue(null)->end()
+                    ->scalarNode('event_collection')->defaultValue(null)->end()
+                    ->scalarNode('snapshot_collection')->defaultValue(null)->end()
                 ->end()
             ->end();
 
