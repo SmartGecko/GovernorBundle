@@ -7,6 +7,7 @@ php:
 
 services:
   - rabbitmq
+  - mongodb
 
 before_script:
   - wget https://scrutinizer-ci.com/ocular.phar
