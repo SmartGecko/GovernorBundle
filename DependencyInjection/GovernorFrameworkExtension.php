@@ -99,8 +99,6 @@ class GovernorFrameworkExtension extends Extension
 
         // configure annotation reader
         $this->loadAnnotationReader($config, $container);
-        // configure mongo templates
-        $this->loadMongoTemplates($config, $container);
         //configure terminals
         $this->loadTerminals($config, $container);
         // configure command buses
@@ -123,7 +121,7 @@ class GovernorFrameworkExtension extends Extension
      * @param array $config
      * @param ContainerBuilder $container
      */
-    private function loadMongoTemplates($config, ContainerBuilder $container)
+    private function loadMongoTemplates($location, $config, ContainerBuilder $container)
     {
         if (!isset($config['mongo_templates'])) {
             return;
@@ -131,7 +129,7 @@ class GovernorFrameworkExtension extends Extension
 
         foreach ($config['mongo_templates'] as $name => $params) {
             $definition = new Definition(
-                $container->getParameter('governor.mongo_template.default.class')
+                $container->getParameter(sprintf('governor.%s.mongo_template.default.class', $location))
             );
 
             $definition->addArgument($params['server']);
@@ -149,10 +147,11 @@ class GovernorFrameworkExtension extends Extension
                 $definition->addArgument($params['snapshot_collection']);
             }
 
-            $container->setDefinition(sprintf('governor.mongo_template.%s', $name), $definition);
+            $container->setDefinition(sprintf('governor.%s.mongo_template.%s', $location, $name), $definition);
         }
 
     }
+
     /**
      * @param array $config
      * @param ContainerBuilder $container
@@ -380,6 +379,8 @@ class GovernorFrameworkExtension extends Extension
             return;
         }
 
+        $this->loadMongoTemplates('saga_repository', $config['saga_repository'], $container);
+
         $definition = new Definition(
             $container->getParameter(
                 sprintf(
@@ -403,6 +404,13 @@ class GovernorFrameworkExtension extends Extension
                             $config['saga_repository']['parameters']['entity_manager']
                         )
                     )
+                );
+                $definition->addArgument(new Reference('governor.resource_injector'));
+                $definition->addArgument(new Reference('governor.serializer'));
+                break;
+            case 'mongo':
+                $definition->addArgument(
+                    new Reference($config['saga_repository']['parameters']['mongo_template'])
                 );
                 $definition->addArgument(new Reference('governor.resource_injector'));
                 $definition->addArgument(new Reference('governor.serializer'));
@@ -467,6 +475,8 @@ class GovernorFrameworkExtension extends Extension
         if (!array_key_exists('event_store', $config)) {
             return;
         }
+
+        $this->loadMongoTemplates('event_store', $config['event_store'], $container);
 
         $definition = new Definition(
             $container->getParameter(

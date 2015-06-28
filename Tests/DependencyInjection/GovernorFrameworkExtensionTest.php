@@ -226,6 +226,12 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                     ]
                 ],
                 'event_store' => [
+                    'mongo_templates' => [
+                        'default' => [
+                            'server' => 'mongodb://localhost:27017',
+                            'database' => 'test'
+                        ]
+                    ],
                     'type' => 'mongo',
                     'parameters' => [
 
@@ -237,9 +243,14 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                     ]
                 ],
                 'saga_repository' => [
-                    'type' => 'orm',
+                    'mongo_templates' => [
+                        'default' => [
+                            'server' => 'mongodb://localhost:27017',
+                            'database' => 'test2'
+                        ]
+                    ],
+                    'type' => 'mongo',
                     'parameters' => [
-                        'entity_manager' => 'default_entity_manager'
                     ]
                 ],
                 'saga_manager' => [
@@ -248,13 +259,7 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                         sys_get_temp_dir()
                     ]
                 ],
-                'order_resolver' => 'annotation',
-                'mongo_templates' => [
-                    'default' => [
-                        'server' => 'mongodb://localhost:27017',
-                        'database' => 'test'
-                    ]
-                ]
+                'order_resolver' => 'annotation'
             ]
         ];
 

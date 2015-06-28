@@ -32,13 +32,16 @@
         <parameter key="governor.event_store.mongo.class">Governor\Framework\EventStore\Mongo\MongoEventStore</parameter>
         <parameter key="governor.event_store.filesystem.class">Governor\Framework\EventStore\Filesystem\FilesystemEventStore</parameter>
 
-        <parameter key="governor.mongo_template.default.class">Governor\Framework\EventStore\Mongo\DefaultMongoTemplate</parameter>
+        <parameter key="governor.event_store.mongo_template.default.class">Governor\Framework\EventStore\Mongo\DefaultMongoTemplate</parameter>
         <parameter key="governor.storage_strategy.event.class">Governor\Framework\EventStore\Mongo\DocumentPerEventStorageStrategy</parameter>
 
         <parameter key="governor.event_file_resolver.class">Governor\Framework\EventStore\Filesystem\SimpleEventFileResolver</parameter>
 
         <!-- saga repositories -->
         <parameter key="governor.saga_repository.orm.class">Governor\Framework\Saga\Repository\Orm\OrmSagaRepository</parameter>
+        <parameter key="governor.saga_repository.mongo.class">Governor\Framework\Saga\Repository\Mongo\MongoSagaRepository</parameter>
+
+        <parameter key="governor.saga_repository.mongo_template.default.class">Governor\Framework\Saga\Repository\Mongo\DefaultMongoTemplate</parameter>
         <!-- saga managers -->
         <parameter key="governor.saga_manager.annotation.class">Governor\Framework\Saga\Annotation\AnnotatedSagaManager</parameter>
 
