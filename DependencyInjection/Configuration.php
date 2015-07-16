@@ -42,6 +42,7 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
+                ->scalarNode('node_name')->isRequired()->end()
                 ->scalarNode('uow_factory')->defaultValue('governor.uow_factory.default')->end()
                 ->scalarNode('command_target_resolver')
                     ->defaultValue('annotation')
@@ -138,13 +139,35 @@ class Configuration implements ConfigurationInterface
                     ->end()
                 ->end()
                 ->append($this->addAggregatesNode())
+                ->append($this->addRoutingStrategies())
                 ->append($this->addCommandBusesNode())
                 ->append($this->addEventBusesNode())
                 ->append($this->addCommandGatewaysNode())
                 ->append($this->addTerminalsNode())
+                ->append($this->addConnectorsNode())
             ->end();
 
         return $treeBuilder;
+    }
+
+    private function addRoutingStrategies()
+    {
+        $treeBuilder = new TreeBuilder();
+        $node = $treeBuilder->root('routing_strategies');
+
+        $node->useAttributeAsKey('name')
+            ->prototype('array')
+                ->children()
+                    ->scalarNode('type')->isRequired()->end()
+                    ->arrayNode('parameters')
+                        ->children()
+                            ->scalarNode('key_name')->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
+
+        return $node;
     }
 
     private function addCommandBusesNode()
@@ -155,8 +178,10 @@ class Configuration implements ConfigurationInterface
         $node->useAttributeAsKey('name')
             ->prototype('array')
                 ->children()
-                    ->scalarNode('class')->isRequired()->end()
-                    ->scalarNode('registry')->isRequired()->end()
+                    ->scalarNode('type')->isRequired()->end()
+                    ->scalarNode('registry')->end()
+                    ->scalarNode('connector')->end()
+                    ->scalarNode('routing_strategy')->end()
                     ->arrayNode('handler_interceptors')
                         ->prototype('scalar')->end()
                     ->end()
@@ -251,6 +276,31 @@ class Configuration implements ConfigurationInterface
                 ->end()
             ->end();
         
+        return $node;
+    }
+
+    private function addConnectorsNode()
+    {
+        $treeBuilder = new TreeBuilder();
+        $node = $treeBuilder->root('connectors');
+
+        $node
+            ->children()
+                ->arrayNode('redis')
+                    ->canBeUnset()
+                        ->useAttributeAsKey('name')
+                        ->prototype('array')
+                            ->cannotBeEmpty()
+                            ->children()
+                                ->scalarNode('url')->defaultValue('tcp://127.0.0.1:6379')->end()
+                                ->scalarNode('routing_strategy')->end()
+                                ->scalarNode('local_segment')->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
+
         return $node;
     }
 

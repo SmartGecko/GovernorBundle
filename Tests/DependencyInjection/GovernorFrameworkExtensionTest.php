@@ -3,6 +3,8 @@
 namespace Governor\Tests\Plugin\SymfonyBundle;
 
 use Governor\Bundle\GovernorBundle\DependencyInjection\Compiler\AggregateCommandHandlerPass;
+use Governor\Framework\CommandHandling\Distributed\DistributedCommandBus;
+use Governor\Framework\CommandHandling\Distributed\MetaDataRoutingStrategy;
 use Psr\Log\LoggerInterface;
 use Governor\Framework\CommandHandling\CommandBusInterface;
 use Governor\Framework\CommandHandling\CommandHandlerInterface;
@@ -176,14 +178,49 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf(EventBusInterface::class, $second);
     }
 
+    public function testRoutingStrategies()
+    {
+        /** @var MetaDataRoutingStrategy $default */
+        $default = $this->testSubject->get('governor.routing_strategy.default');
+        $this->assertInstanceOf(MetaDataRoutingStrategy::class, $default);
+    }
+
+    public function testCommandBuses()
+    {
+        /** @var  SimpleCommandBus $simple */
+        $simple = $this->testSubject->get('governor.command_bus.default');
+        $this->assertInstanceOf(SimpleCommandBus::class, $simple);
+
+        /** @var DistributedCommandBus $distributed */
+        $distributed = $this->testSubject->get('governor.command_bus.distributed');
+        $this->assertInstanceOf(DistributedCommandBus::class, $distributed);
+    }
+
     public function createTestContainer()
     {
 
         $config = [
             'governor' => [
+                'node_name' => 'test-01',
                 'terminals' => [
                     'amqp' => [
                         'default' => [
+                        ]
+                    ]
+                ],
+                'connectors' => [
+                    'redis' => [
+                        'default' => [
+                            'routing_strategy' => 'default',
+                            'local_segment' => 'default'
+                        ]
+                    ]
+                ],
+                'routing_strategies' => [
+                    'default' => [
+                        'type' => 'metadata',
+                        'parameters' => [
+                            'key_name' => 'aggregateIdentifier'
                         ]
                     ]
                 ],
@@ -208,8 +245,13 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                 ],
                 'command_buses' => [
                     'default' => [
-                        'class' => SimpleCommandBus::class,
-                        'registry' => 'governor.command_bus_registry.in_memory'
+                        'type' => 'simple',
+                        'registry' => 'in_memory'
+                    ],
+                    'distributed' => [
+                        'type' => 'distributed',
+                        'connector' => 'default',
+                        'routing_strategy' => 'default'
                     ]
                 ],
                 'event_buses' => [

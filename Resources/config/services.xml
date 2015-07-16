@@ -80,15 +80,24 @@
         <parameter key="governor.command_bus_registry.in_memory.class">Governor\Framework\CommandHandling\InMemoryCommandHandlerRegistry</parameter>
         <parameter key="governor.event_bus_registry.in_memory.class">Governor\Framework\EventHandling\InMemoryEventListenerRegistry</parameter>
 
+        <!-- command buses -->
+        <parameter key="governor.command_bus.simple.class">Governor\Framework\CommandHandling\SimpleCommandBus</parameter>
+        <parameter key="governor.command_bus.distributed.class">Governor\Framework\CommandHandling\Distributed\DistributedCommandBus</parameter>
+
+        <!-- routing strategies -->
+        <parameter key="governor.routing_strategy.metadata.class">Governor\Framework\CommandHandling\Distributed\MetaDataRoutingStrategy</parameter>
+
+        <parameter key="governor.connector.redis.class">Governor\Framework\CommandHandling\Distributed\RedisCommandBusConnector</parameter>
+        <parameter key="governor.connector_receiver.redis.class">Governor\Framework\CommandHandling\Distributed\CommandReceiver</parameter>
+
     </parameters>
 
     <services>
 
-        <service id="governor.storage_strategy.event" class="%governor.storage_strategy.event.class%">
-
+        <service id="governor.routing_strategy.metadata" class="%governor.routing_strategy.metadata.class%" public="false">
         </service>
 
-        <service id="governor.command_bus_registry.in_memory" class="%governor.command_bus_registry.in_memory.class%" public="false">
+        <service id="governor.storage_strategy.event" class="%governor.storage_strategy.event.class%">
         </service>
 
         <service id="governor.event_bus_registry.in_memory" class="%governor.event_bus_registry.in_memory.class%" public="false">

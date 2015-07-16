@@ -24,6 +24,7 @@
 
 namespace Governor\Bundle\GovernorBundle\DependencyInjection;
 
+use Predis\Client;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\Config\FileLocator;
@@ -90,6 +91,7 @@ class GovernorFrameworkExtension extends Extension
         $container->setAlias('governor.uow_factory', new Alias($config['uow_factory']));
 
         $container->setParameter('governor.aggregates', $config['aggregates']);
+        $container->setParameter('governor.node_name', $config['node_name']);
 
         $loader = new XmlFileLoader(
             $container,
@@ -99,8 +101,12 @@ class GovernorFrameworkExtension extends Extension
 
         // configure annotation reader
         $this->loadAnnotationReader($config, $container);
+        // configure routing strategies
+        $this->loadRoutingStrategies($config, $container);
         //configure terminals
         $this->loadTerminals($config, $container);
+        //configure connectors
+        $this->loadConnectors($config, $container);
         // configure command buses
         $this->loadCommandBuses($config, $container);
         // configure event buses
@@ -115,6 +121,26 @@ class GovernorFrameworkExtension extends Extension
         $this->loadSagaRepository($config, $container);
         // configure saga manager
         $this->loadSagaManager($config, $container);
+    }
+
+    private function loadRoutingStrategies($config, ContainerBuilder $container)
+    {
+        if (!isset($config['routing_strategies'])) {
+            return;
+        }
+
+        foreach ($config['routing_strategies'] as $name => $strategy) {
+            switch ($strategy['type']) {
+                case 'metadata':
+                    $definition = new Definition(
+                        $container->getParameter(sprintf('governor.routing_strategy.%s.class', $strategy['type']))
+                    );
+
+                    $definition->addArgument($strategy['parameters']['key_name']);
+                    $container->setDefinition(sprintf('governor.routing_strategy.%s', $name), $definition);
+                    break;
+            }
+        }
     }
 
     /**
@@ -180,7 +206,7 @@ class GovernorFrameworkExtension extends Extension
      * @param $config
      * @param ContainerBuilder $container
      */
-    private function loadAmqpTerminals($config, ContainerBuilder $container)
+    private function configureAmqpTerminals($config, ContainerBuilder $container)
     {
         foreach ($config as $name => $terminal) {
             $connectionDefinition = new Definition(
@@ -250,9 +276,59 @@ class GovernorFrameworkExtension extends Extension
         foreach ($config['terminals'] as $type => $data) {
             switch ($type) {
                 case 'amqp':
-                    $this->loadAmqpTerminals($data, $container);
+                    $this->configureAmqpTerminals($data, $container);
                     break;
             }
+        }
+    }
+
+    /**
+     * @param $config
+     * @param ContainerBuilder $container
+     */
+    private function loadConnectors($config, ContainerBuilder $container)
+    {
+        if (empty($config['connectors'])) {
+            return;
+        }
+
+        foreach ($config['connectors'] as $type => $data) {
+            switch ($type) {
+                case 'redis':
+                    $this->configureRedisConnectors($data, $container);
+                    break;
+            }
+        }
+    }
+
+    /**
+     * @param $config
+     * @param ContainerBuilder $container
+     */
+    private function configureRedisConnectors($config, ContainerBuilder $container)
+    {
+        foreach ($config as $name => $connector) {
+            $connectionDefinition = new Definition(Client::class);
+            $connectionDefinition->addArgument($connector['url']);
+
+            $container->setDefinition(sprintf('governor.connector.%s.connection', $name), $connectionDefinition);
+
+            $definition = new Definition($container->getParameter('governor.connector.redis.class'));
+            $definition->addArgument(new Reference(sprintf('governor.connector.%s.connection', $name)));
+            $definition->addArgument(new Reference(sprintf('governor.command_bus.%s', $connector['local_segment'])));
+            $definition->addArgument(new Reference('governor.serializer'));
+            $definition->addArgument($container->getParameter('governor.node_name'));
+
+            $container->setDefinition(sprintf('governor.connector.%s', $name), $definition);
+
+
+            $receiverDefinition = new Definition($container->getParameter('governor.connector_receiver.redis.class'));
+            $receiverDefinition->addArgument(new Reference(sprintf('governor.connector.%s.connection', $name)));
+            $receiverDefinition->addArgument(new Reference(sprintf('governor.command_bus.%s', $connector['local_segment'])));
+            $receiverDefinition->addArgument(new Reference('governor.serializer'));
+            $receiverDefinition->addArgument($container->getParameter('governor.node_name'));
+
+            $container->setDefinition(sprintf('governor.connector_receiver.%s', $name), $receiverDefinition);
         }
     }
 
@@ -263,30 +339,34 @@ class GovernorFrameworkExtension extends Extension
     private function loadCommandBuses($config, ContainerBuilder $container)
     {
         foreach ($config['command_buses'] as $name => $bus) {
-            $handlerInterceptors = [];
-            $dispatchInterceptors = [];
 
-            $template = $container->findDefinition($bus['registry']);
-            $registryDefinition = new Definition($template->getClass());
-            $registryDefinition->setArguments($template->getArguments());
+            $definition = new Definition(
+                $container->getParameter(sprintf('governor.command_bus.%s.class', $bus['type']))
+            );
 
-            $container->setDefinition(sprintf('governor.command_bus.registry.%s', $name), $registryDefinition);
-
-            $definition = new Definition($bus['class']);
-            $definition->addArgument(new Reference(sprintf('governor.command_bus.registry.%s', $name)));
-            $definition->addArgument(new Reference('governor.uow_factory'));
             $definition->addMethodCall('setLogger', [new Reference('logger')]);
+            $definition->addMethodCall(
+                'setDispatchInterceptors',
+                [
+                    array_map(
+                        function ($interceptor) {
+                            return new Reference($interceptor);
+                        },
+                        $bus['dispatch_interceptors']
+                    )
+                ]
+            );
 
-            foreach ($bus['handler_interceptors'] as $interceptor) {
-                $handlerInterceptors[] = new Reference($interceptor);
+            switch ($bus['type']) {
+                case 'simple':
+                    $this->configureSimpleCommandBus($container, $definition, $name, $bus);
+                    break;
+                case 'distributed':
+                    $this->configureDistributedCommandBus($container, $definition, $name, $bus);
+                    break;
+                default:
+                    throw new \RuntimeException(sprintf('Unknown command bus type %s', $bus['type']));
             }
-
-            foreach ($bus['dispatch_interceptors'] as $interceptor) {
-                $dispatchInterceptors[] = new Reference($interceptor);
-            }
-
-            $definition->addMethodCall('setHandlerInterceptors', [$handlerInterceptors]);
-            $definition->addMethodCall('setDispatchInterceptors', [$dispatchInterceptors]);
 
             $container->setDefinition(
                 sprintf("governor.command_bus.%s", $name),
@@ -299,6 +379,35 @@ class GovernorFrameworkExtension extends Extension
                 "Missing default command bus configuration, a command bus with the name \"default\" has to be configured."
             );
         }
+    }
+
+    private function configureSimpleCommandBus(ContainerBuilder $container, Definition $definition, $name, $bus)
+    {
+        $registryDefinition = new Definition(
+            $container->getParameter(sprintf('governor.command_bus_registry.%s.class', $bus['registry']))
+        );
+        $container->setDefinition(sprintf('governor.command_bus.registry.%s', $name), $registryDefinition);
+
+        $definition->addArgument(new Reference(sprintf('governor.command_bus.registry.%s', $name)));
+        $definition->addArgument(new Reference('governor.uow_factory'));
+
+        $definition->addMethodCall(
+            'setHandlerInterceptors',
+            [
+                array_map(
+                    function ($interceptor) {
+                        return new Reference($interceptor);
+                    },
+                    $bus['handler_interceptors']
+                )
+            ]
+        );
+    }
+
+    private function configureDistributedCommandBus(ContainerBuilder $container, Definition $definition, $name, $bus)
+    {
+        $definition->addArgument(new Reference(sprintf('governor.connector.%s', $bus['connector'])));
+        $definition->addArgument(new Reference(sprintf('governor.routing_strategy.%s', $bus['routing_strategy'])));
     }
 
     /**

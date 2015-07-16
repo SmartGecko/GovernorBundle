@@ -41,46 +41,82 @@ class AmqpDebugCommand extends ContainerAwareCommand
     protected function configure()
     {
         $this
-                ->setName('governor:amqp-debug')
-                ->addArgument("exchange", InputArgument::REQUIRED,
-                        "Name of the exchange to listen read from")
-                ->addArgument("connection", InputArgument::OPTIONAL,
-                        "Name of the connection to use", "default")
-                ->setDescription('Displays events routed to the AMQP terminal.')
-        ;
+            ->setName('governor:amqp-debug')
+            ->addArgument(
+                "exchange",
+                InputArgument::REQUIRED,
+                "Name of the exchange to listen read from"
+            )
+            ->addArgument(
+                "connection",
+                InputArgument::OPTIONAL,
+                "Name of the connection to use",
+                "default"
+            )
+            ->setDescription('Displays events routed to the AMQP terminal.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $formatter = $this->getHelperSet()->get('formatter');
         $serializer = $this->getContainer()->get('governor.serializer');
-        $connection = $this->getContainer()->get(sprintf("governor.amqp_terminal.connection.%s",
-                        $input->getArgument("connection")));
+        $connection = $this->getContainer()->get(
+            sprintf(
+                "governor.amqp_terminal.connection.%s",
+                $input->getArgument("connection")
+            )
+        );
 
         $channel = $connection->channel();
 
-        $output->writeln($formatter->formatSection('Connecting',
-                        'Using connection ' . $input->getArgument('connection')));
+        $output->writeln(
+            $formatter->formatSection(
+                'Connecting',
+                'Using connection '.$input->getArgument('connection')
+            )
+        );
 
-        list($queueName,, ) = $channel->queue_declare("", false, false, true,
-                false);
+        list($queueName, ,) = $channel->queue_declare(
+            "",
+            false,
+            false,
+            true,
+            false
+        );
         $channel->queue_bind($queueName, $input->getArgument('exchange'), '#');
 
-        $output->writeln($formatter->formatSection('*',
-                        'Waiting for events. To exit press CTRL+C'));
+        $output->writeln(
+            $formatter->formatSection(
+                '*',
+                'Waiting for events. To exit press CTRL+C'
+            )
+        );
 
-        $callback = function($msg) use($output, $formatter, $serializer) {
+        $callback = function ($msg) use ($output, $formatter, $serializer) {
             $reader = new EventMessageReader($serializer);
             $message = $reader->readEventMessage($msg->body);
 
-            $output->writeln($formatter->formatSection('*',
-                            sprintf("Recieved event with routing key %s",
-                                    $msg->delivery_info['routing_key'])));
-            $output->writeln(array(' [x] ' . print_r($message, true)));
+            $output->writeln(
+                $formatter->formatSection(
+                    '*',
+                    sprintf(
+                        "Recieved event with routing key %s",
+                        $msg->delivery_info['routing_key']
+                    )
+                )
+            );
+            $output->writeln(array(' [x] '.print_r($message, true)));
         };
 
-        $channel->basic_consume($queueName, '', false, true, false, false,
-                $callback);
+        $channel->basic_consume(
+            $queueName,
+            '',
+            false,
+            true,
+            false,
+            false,
+            $callback
+        );
 
         while (count($channel->callbacks)) {
             $channel->wait();
