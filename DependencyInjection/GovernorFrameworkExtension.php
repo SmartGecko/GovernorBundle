@@ -24,7 +24,6 @@
 
 namespace Governor\Bundle\GovernorBundle\DependencyInjection;
 
-use Predis\Client;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\Config\FileLocator;
@@ -308,25 +307,43 @@ class GovernorFrameworkExtension extends Extension
     private function configureRedisConnectors($config, ContainerBuilder $container)
     {
         foreach ($config as $name => $connector) {
-            $connectionDefinition = new Definition(Client::class);
-            $connectionDefinition->addArgument($connector['url']);
+            $templateId = sprintf('governor.connector.%s.template', $name);
 
-            $container->setDefinition(sprintf('governor.connector.%s.connection', $name), $connectionDefinition);
+            $templateDefinition = new Definition($container->getParameter('governor.connector_template.redis.class'));
+            $templateDefinition->addArgument($connector['url']);
+            $templateDefinition->addArgument($container->getParameter('governor.node_name'));
+            $templateDefinition->addArgument([]);
+
+            $container->setDefinition($templateId, $templateDefinition);
 
             $definition = new Definition($container->getParameter('governor.connector.redis.class'));
-            $definition->addArgument(new Reference(sprintf('governor.connector.%s.connection', $name)));
+            $definition->addArgument(new Reference($templateId));
             $definition->addArgument(new Reference(sprintf('governor.command_bus.%s', $connector['local_segment'])));
             $definition->addArgument(new Reference('governor.serializer'));
-            $definition->addArgument($container->getParameter('governor.node_name'));
 
             $container->setDefinition(sprintf('governor.connector.%s', $name), $definition);
 
+            // cache warmer & clarer
+            $warmerDefinition = new Definition($container->getParameter('governor.connector_cache_warmer.redis.class'));
+            $warmerDefinition->addArgument(new Reference(sprintf('governor.connector.%s', $name)));
+            $warmerDefinition->addMethodCall('setLogger', [new Reference('logger')]);
+            $warmerDefinition->addTag('kernel.cache_warmer');
+            
+            $container->setDefinition(sprintf('governor.connector_cache_warmer.%s', $name), $warmerDefinition);
 
+            $clearerDefinition = new Definition($container->getParameter('governor.connector_cache_clearer.redis.class'));
+            $clearerDefinition->addArgument(new Reference(sprintf('governor.connector.%s', $name)));
+            $clearerDefinition->addMethodCall('setLogger', [new Reference('logger')]);
+            $clearerDefinition->addTag('kernel.cache_clearer');
+
+            $container->setDefinition(sprintf('governor.connector_cache_clearer.%s', $name), $clearerDefinition);
+            
+            // connector receiver
             $receiverDefinition = new Definition($container->getParameter('governor.connector_receiver.redis.class'));
-            $receiverDefinition->addArgument(new Reference(sprintf('governor.connector.%s.connection', $name)));
+            $receiverDefinition->addArgument(new Reference($templateId));
             $receiverDefinition->addArgument(new Reference(sprintf('governor.command_bus.%s', $connector['local_segment'])));
             $receiverDefinition->addArgument(new Reference('governor.serializer'));
-            $receiverDefinition->addArgument($container->getParameter('governor.node_name'));
+            $receiverDefinition->addMethodCall('setLogger', [new Reference('logger')]);
 
             $container->setDefinition(sprintf('governor.connector_receiver.%s', $name), $receiverDefinition);
         }

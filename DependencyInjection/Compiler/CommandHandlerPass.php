@@ -50,7 +50,7 @@ class CommandHandlerPass extends AbstractHandlerPass
             $registry = $container->findDefinition(
                 sprintf(
                     "governor.command_bus.registry.%s",
-                    isset($attributes['command_bus']) ? $attributes['command_bus']
+                    isset($attributes[0]['command_bus']) ? $attributes[0]['command_bus']
                         : 'default'
                 )
             );

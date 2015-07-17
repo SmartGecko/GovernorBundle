@@ -24,11 +24,33 @@
 
 namespace Governor\Bundle\GovernorBundle\CacheWarmer;
 
-
+use Governor\Framework\CommandHandling\Distributed\RedisCommandBusConnector;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
+use Governor\Framework\Common\Logging\NullLogger;
 use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
 
-class RedisCacheWarmer implements CacheWarmerInterface
+class RedisConnectorCacheWarmer implements CacheWarmerInterface, LoggerAwareInterface
 {
+    /**
+     * @var RedisCommandBusConnector
+     */
+    private $connector;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    /**
+     * @param RedisCommandBusConnector $connector
+     */
+    function __construct(RedisCommandBusConnector $connector)
+    {
+        $this->connector = $connector;
+        $this->logger = new NullLogger();
+    }
+
     /**
      * Mandatory warmer.
      *
@@ -44,7 +66,30 @@ class RedisCacheWarmer implements CacheWarmerInterface
      */
     public function warmUp($cacheDir)
     {
-
+        try {
+            $this->connector->saveSubscriptions();
+            $this->logger->info('Warmed cache for connector on node {node}',
+                [
+                    'node' => $this->connector->getNodeName(),
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to warm cache for connector on node {node}: {error}',
+                [
+                    'node' => $this->connector->getNodeName(),
+                    'error' => $e->getMessage()
+                ]
+            );
+        }
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
 
 }

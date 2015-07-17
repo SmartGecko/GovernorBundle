@@ -144,6 +144,9 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($aggregates['dummy1']['handler']);
         $this->assertFalse($aggregates['dummy2']['handler']);
 
+        $this->assertEquals('default', $aggregates['dummy1']['command_bus']);
+        $this->assertEquals('third', $aggregates['dummy2']['command_bus']);
+
         $count = 0;
 
         foreach ($this->testSubject->getServiceIds() as $id) {
@@ -240,7 +243,8 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                     'dummy2' => [
                         'class' => Dummy2Aggregate::class,
                         'repository' => 'hybrid',
-                        'handler' => false
+                        'handler' => false,
+                        'command_bus' => 'third'
                     ]
                 ],
                 'command_buses' => [
@@ -252,7 +256,11 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                         'type' => 'distributed',
                         'connector' => 'default',
                         'routing_strategy' => 'default'
-                    ]
+                    ],
+                    'third' => [
+                        'type' => 'simple',
+                        'registry' => 'in_memory'
+                    ],
                 ],
                 'event_buses' => [
                     'default' => [
