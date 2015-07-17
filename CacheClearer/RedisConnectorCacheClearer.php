@@ -22,7 +22,7 @@
  * <http://www.governor-framework.org/>.
  */
 
-namespace Governor\Bundle\CacheClearer;
+namespace Governor\Bundle\GovernorBundle\CacheClearer;
 
 use Governor\Framework\Common\Logging\NullLogger;
 use Governor\Framework\CommandHandling\Distributed\RedisCommandBusConnector;

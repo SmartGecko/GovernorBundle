@@ -3,6 +3,7 @@
 namespace Governor\Tests\Plugin\SymfonyBundle;
 
 use Governor\Bundle\GovernorBundle\DependencyInjection\Compiler\AggregateCommandHandlerPass;
+use Governor\Framework\CommandHandling\Distributed\AnnotationRoutingStrategy;
 use Governor\Framework\CommandHandling\Distributed\DistributedCommandBus;
 use Governor\Framework\CommandHandling\Distributed\MetaDataRoutingStrategy;
 use Psr\Log\LoggerInterface;
@@ -186,6 +187,10 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
         /** @var MetaDataRoutingStrategy $default */
         $default = $this->testSubject->get('governor.routing_strategy.default');
         $this->assertInstanceOf(MetaDataRoutingStrategy::class, $default);
+
+        /** @var AnnotationRoutingStrategy $annotated */
+        $annotated = $this->testSubject->get('governor.routing_strategy.annotated');
+        $this->assertInstanceOf(AnnotationRoutingStrategy::class, $annotated);
     }
 
     public function testCommandBuses()
@@ -225,6 +230,9 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                         'parameters' => [
                             'key_name' => 'aggregateIdentifier'
                         ]
+                    ],
+                    'annotated' => [
+                        'type' => 'annotation'
                     ]
                 ],
                 'annotation_reader' => [

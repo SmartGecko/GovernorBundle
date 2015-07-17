@@ -138,6 +138,14 @@ class GovernorFrameworkExtension extends Extension
                     $definition->addArgument($strategy['parameters']['key_name']);
                     $container->setDefinition(sprintf('governor.routing_strategy.%s', $name), $definition);
                     break;
+                case 'annotation':
+                    $definition = new Definition(
+                        $container->getParameter(sprintf('governor.routing_strategy.%s.class', $strategy['type']))
+                    );
+
+                    $definition->addArgument(new Reference('governor.annotation_reader_factory'));
+                    $container->setDefinition(sprintf('governor.routing_strategy.%s', $name), $definition);
+                    break;
             }
         }
     }

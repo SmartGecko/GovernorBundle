@@ -86,6 +86,7 @@
 
         <!-- routing strategies -->
         <parameter key="governor.routing_strategy.metadata.class">Governor\Framework\CommandHandling\Distributed\MetaDataRoutingStrategy</parameter>
+        <parameter key="governor.routing_strategy.annotation.class">Governor\Framework\CommandHandling\Distributed\AnnotationRoutingStrategy</parameter>
 
         <parameter key="governor.connector_template.redis.class">Governor\Framework\CommandHandling\Distributed\RedisTemplate</parameter>
         <parameter key="governor.connector.redis.class">Governor\Framework\CommandHandling\Distributed\RedisCommandBusConnector</parameter>
@@ -97,6 +98,10 @@
     </parameters>
 
     <services>
+
+        <service id="governor.routing_strategy.annotation" class="%governor.routing_strategy.annotation.class%" public="false">
+            <argument type="service" id="governor.annotation_reader_factory"/>
+        </service>
 
         <service id="governor.routing_strategy.metadata" class="%governor.routing_strategy.metadata.class%" public="false">
         </service>
