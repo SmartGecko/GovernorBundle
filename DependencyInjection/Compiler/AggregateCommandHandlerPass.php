@@ -29,9 +29,9 @@ class AggregateCommandHandlerPass extends AbstractHandlerPass
                 continue;
             }
 
-            $registry = $container->findDefinition(
+            $bus = $container->findDefinition(
                 sprintf(
-                    "governor.command_bus.registry.%s",
+                    "governor.command_bus.%s",
                     isset($parameters['command_bus']) ? $parameters['command_bus']
                         : 'default'
                 )
@@ -56,7 +56,7 @@ class AggregateCommandHandlerPass extends AbstractHandlerPass
                     ->setPublic(true)
                     ->setLazy(true);
 
-                $registry->addMethodCall(
+                $bus->addMethodCall(
                     'subscribe',
                     [
                         $handlerDefinition->getPayloadType(),

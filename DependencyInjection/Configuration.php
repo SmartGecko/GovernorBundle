@@ -179,7 +179,6 @@ class Configuration implements ConfigurationInterface
             ->prototype('array')
                 ->children()
                     ->scalarNode('type')->isRequired()->end()
-                    ->scalarNode('registry')->end()
                     ->scalarNode('connector')->end()
                     ->scalarNode('routing_strategy')->end()
                     ->arrayNode('handler_interceptors')

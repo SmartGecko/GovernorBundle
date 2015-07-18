@@ -76,14 +76,11 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
         $commandBus = $this->testSubject->get('governor.command_bus.default');
         $this->assertInstanceOf(CommandBusInterface::class, $commandBus);
 
-        $registry = $commandBus->getCommandHandlerRegistry();
-        $this->assertInstanceOf(InMemoryCommandHandlerRegistry::class, $registry);
-
-        $handler = $registry->findCommandHandlerFor(GenericCommandMessage::asCommandMessage(new ContainerCommand1()));
+        $handler = $commandBus->findCommandHandlerFor(GenericCommandMessage::asCommandMessage(new ContainerCommand1()));
         $this->assertInstanceOf(CommandHandlerInterface::class, $handler);
 
         try {
-            $registry->findCommandHandlerFor(GenericCommandMessage::asCommandMessage(new \stdClass()));
+            $commandBus->findCommandHandlerFor(GenericCommandMessage::asCommandMessage(new \stdClass()));
             $this->fail('NoHandlerForCommandException expected');
         } catch (NoHandlerForCommandException $ex) {
 
@@ -257,8 +254,7 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                 ],
                 'command_buses' => [
                     'default' => [
-                        'type' => 'simple',
-                        'registry' => 'in_memory'
+                        'type' => 'simple'
                     ],
                     'distributed' => [
                         'type' => 'distributed',
@@ -266,8 +262,7 @@ class GovernorFrameworkExtensionTest extends \PHPUnit_Framework_TestCase
                         'routing_strategy' => 'default'
                     ],
                     'third' => [
-                        'type' => 'simple',
-                        'registry' => 'in_memory'
+                        'type' => 'simple'
                     ],
                 ],
                 'event_buses' => [

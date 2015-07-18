@@ -384,10 +384,10 @@ class GovernorFrameworkExtension extends Extension
 
             switch ($bus['type']) {
                 case 'simple':
-                    $this->configureSimpleCommandBus($container, $definition, $name, $bus);
+                    $this->configureSimpleCommandBus($definition, $bus);
                     break;
                 case 'distributed':
-                    $this->configureDistributedCommandBus($container, $definition, $name, $bus);
+                    $this->configureDistributedCommandBus($definition, $bus);
                     break;
                 default:
                     throw new \RuntimeException(sprintf('Unknown command bus type %s', $bus['type']));
@@ -406,16 +406,9 @@ class GovernorFrameworkExtension extends Extension
         }
     }
 
-    private function configureSimpleCommandBus(ContainerBuilder $container, Definition $definition, $name, $bus)
+    private function configureSimpleCommandBus(Definition $definition, $bus)
     {
-        $registryDefinition = new Definition(
-            $container->getParameter(sprintf('governor.command_bus_registry.%s.class', $bus['registry']))
-        );
-        $container->setDefinition(sprintf('governor.command_bus.registry.%s', $name), $registryDefinition);
-
-        $definition->addArgument(new Reference(sprintf('governor.command_bus.registry.%s', $name)));
         $definition->addArgument(new Reference('governor.uow_factory'));
-
         $definition->addMethodCall(
             'setHandlerInterceptors',
             [
@@ -429,7 +422,7 @@ class GovernorFrameworkExtension extends Extension
         );
     }
 
-    private function configureDistributedCommandBus(ContainerBuilder $container, Definition $definition, $name, $bus)
+    private function configureDistributedCommandBus(Definition $definition, $bus)
     {
         $definition->addArgument(new Reference(sprintf('governor.connector.%s', $bus['connector'])));
         $definition->addArgument(new Reference(sprintf('governor.routing_strategy.%s', $bus['routing_strategy'])));

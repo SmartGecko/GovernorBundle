@@ -77,7 +77,6 @@
         <parameter key="governor.uow_factory.debug.class">Governor\Bundle\GovernorBundle\UnitOfWork\DebugUnitOfWorkFactory</parameter>
 
         <!-- registries -->
-        <parameter key="governor.command_bus_registry.in_memory.class">Governor\Framework\CommandHandling\InMemoryCommandHandlerRegistry</parameter>
         <parameter key="governor.event_bus_registry.in_memory.class">Governor\Framework\EventHandling\InMemoryEventListenerRegistry</parameter>
 
         <!-- command buses -->
@@ -161,7 +160,9 @@
         </service>
 
         <!-- command target resolvers -->
-        <service id="governor.command_target_resolver.annotation" class="%governor.command_target_resolver.annotation.class%"/>
+        <service id="governor.command_target_resolver.annotation" class="%governor.command_target_resolver.annotation.class%">
+            <argument type="service" id="governor.annotation_reader_factory"/>
+        </service>
         <service id="governor.command_target_resolver.metadata" class="%governor.command_target_resolver.metadata.class%"/>
 
         <!-- aggregate factory -->

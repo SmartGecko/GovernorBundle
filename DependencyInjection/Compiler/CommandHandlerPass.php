@@ -47,9 +47,9 @@ class CommandHandlerPass extends AbstractHandlerPass
     public function process(ContainerBuilder $container)
     {
         foreach ($container->findTaggedServiceIds('governor.command_handler') as $id => $attributes) {
-            $registry = $container->findDefinition(
+            $bus = $container->findDefinition(
                 sprintf(
-                    "governor.command_bus.registry.%s",
+                    "governor.command_bus.%s",
                     isset($attributes[0]['command_bus']) ? $attributes[0]['command_bus']
                         : 'default'
                 )
@@ -75,7 +75,7 @@ class CommandHandlerPass extends AbstractHandlerPass
                     ->setPublic(true)
                     ->setLazy(true);
 
-                $registry->addMethodCall('subscribe',
+                $bus->addMethodCall('subscribe',
                     [
                         $handlerDefinition->getPayloadType(),
                         new Reference($handlerId)
