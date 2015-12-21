@@ -101,6 +101,7 @@ class ReplayService implements LoggerAwareInterface
             $this->serializer,
             new DefaultAmqpMessageConverter($this->serializer, $this->routingKeyResolver)
         );
+        $terminal->setConnection($this->connection);
         $terminal->setExchangeName($exchange);
         $eventBus->setTerminals([$terminal]);
 
